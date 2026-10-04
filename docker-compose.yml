@@ -1,0 +1,14 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: ghcr.io/${GITHUB_REPOSITORY:-web-ar-platform}:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - courses_data:/data/courses
+    restart: unless-stopped
+
+volumes:
+  courses_data:

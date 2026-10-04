@@ -1,0 +1,1853 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Конструктор курсов AR (Epson) - Pro</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0; padding: 16px; color: #c8d0dc;
+            display: flex; gap: 16px; height: 100vh; overflow: hidden;
+            background: #0c0e14;
+            background-image:
+                radial-gradient(ellipse at 10% 90%, rgba(56, 189, 248, 0.05) 0%, transparent 50%),
+                radial-gradient(ellipse at 90% 10%, rgba(168, 85, 247, 0.04) 0%, transparent 50%);
+        }
+
+        /* === ЛЕВАЯ ПАНЕЛЬ === */
+        .controls-panel {
+            width: 480px; padding: 0; border-radius: 16px;
+            display: flex; flex-direction: column;
+            background: linear-gradient(165deg, rgba(22, 27, 40, 0.95), rgba(15, 18, 28, 0.98));
+            border: 1px solid rgba(255,255,255,0.06);
+            box-shadow: 0 8px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04);
+            backdrop-filter: blur(20px);
+        }
+
+        /* Хедер панели */
+        .panel-header {
+            display: flex; align-items: center; gap: 10px;
+            padding: 14px 16px;
+            background: rgba(255,255,255,0.02);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px 16px 0 0;
+        }
+        .panel-title {
+            font-size: 13px; font-weight: 700; color: #e2e8f0;
+            letter-spacing: -0.3px; flex: 1; white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis;
+        }
+        .panel-title span { color: #475569; font-weight: 400; font-size: 11px; margin-left: 6px; }
+
+        /* Иконочные кнопки в хедере */
+        .hdr-btn {
+            width: 30px; height: 30px; border-radius: 8px; border: none;
+            background: rgba(255,255,255,0.05); color: #64748b;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            font-size: 14px; transition: all 0.2s; font-family: inherit; padding: 0;
+        }
+        .hdr-btn:hover:not(:disabled) { background: rgba(255,255,255,0.1); color: #e2e8f0; }
+        .hdr-btn:disabled { opacity: 0.2; cursor: not-allowed; }
+        .hdr-btn.primary {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: #fff; box-shadow: 0 2px 8px rgba(59,130,246,0.2);
+        }
+        .hdr-btn.primary:hover { box-shadow: 0 4px 12px rgba(59,130,246,0.35); }
+        .hdr-btn-group { display: flex; gap: 2px; }
+        .hdr-btn-group .hdr-btn { border-radius: 4px; }
+        .hdr-btn-group .hdr-btn:first-child { border-radius: 8px 4px 4px 8px; }
+        .hdr-btn-group .hdr-btn:last-child { border-radius: 4px 8px 8px 4px; }
+
+        /* Кнопка меню ⋮ */
+        .menu-anchor { position: relative; }
+        .action-menu {
+            position: absolute; top: calc(100% + 6px); right: 0;
+            background: rgba(22,27,40,0.97); backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px; padding: 4px; min-width: 200px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+            z-index: 100; display: none;
+        }
+        .action-menu.open { display: block; }
+        .action-menu .menu-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 12px; border-radius: 8px; cursor: pointer;
+            color: #94a3b8; font-size: 12px; font-weight: 500;
+            transition: all 0.15s; font-family: inherit; border: none;
+            background: none; width: 100%; text-align: left;
+        }
+        .action-menu .menu-item:hover { background: rgba(255,255,255,0.06); color: #e2e8f0; }
+        .action-menu .menu-item .mi-icon { width: 18px; text-align: center; font-size: 14px; }
+        .action-menu .menu-item .mi-key {
+            margin-left: auto; font-size: 10px; color: #334155;
+            font-weight: 400; letter-spacing: 0.3px;
+        }
+        .action-menu .menu-item.danger { color: #f87171; }
+        .action-menu .menu-item.danger:hover { background: rgba(239,68,68,0.1); }
+        .action-menu .menu-sep { height: 1px; background: rgba(255,255,255,0.05); margin: 3px 8px; }
+
+        /* Panel body */
+        .panel-body { flex: 1; display: flex; gap: 0; overflow: hidden; min-height: 0; }
+
+        /* Таймлайн */
+        .timeline {
+            overflow-y: auto;
+            display: flex; flex-direction: column; gap: 3px;
+            padding: 12px 10px 12px 14px;
+            border-right: 1px solid rgba(255,255,255,0.05);
+            background: rgba(0,0,0,0.15);
+        }
+        .timeline::-webkit-scrollbar { width: 3px; }
+        .timeline::-webkit-scrollbar-track { background: transparent; }
+        .timeline::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        .timeline::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+        .timeline-item {
+            padding: 9px 10px; background: rgba(255,255,255,0.03);
+            border-radius: 10px; cursor: pointer; position: relative;
+            border-left: 3px solid transparent; transition: all 0.25s ease;
+            user-select: none;
+        }
+        .timeline-item:hover { background: rgba(255,255,255,0.06); }
+        .timeline-item.active {
+            background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(16,185,129,0.05));
+            border-left-color: #10b981;
+            box-shadow: 0 2px 12px rgba(16,185,129,0.1);
+        }
+        .timeline-item.drag-over-top { border-top: 2px solid #10b981; }
+        .timeline-item.drag-over-bottom { border-bottom: 2px solid #10b981; }
+        .timeline-item .step-num { font-weight: 700; color: #10b981; font-size: 11px; letter-spacing: 0.3px; }
+        .timeline-item .step-title { color: #6b7a90; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 3px; max-width: 110px; font-weight: 400; }
+        .timeline-item.active .step-title { color: #94a3b8; }
+        .timeline-item .step-icons { display: flex; gap: 3px; margin-top: 5px; }
+        .timeline-item .step-icons span {
+            font-size: 7px; padding: 2px 4px; border-radius: 3px;
+            background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.15);
+            font-weight: 700; letter-spacing: 0.5px; font-family: inherit;
+        }
+        .timeline-item .step-icons span.has { color: #34d399; background: rgba(16,185,129,0.12); }
+        .timeline-item .btn-dup {
+            position: absolute; top: 6px; right: 6px; background: none; border: none;
+            color: rgba(255,255,255,0.15); cursor: pointer; font-size: 13px;
+            padding: 2px 4px; opacity: 0; transition: all 0.2s; border-radius: 4px;
+        }
+        .timeline-item:hover .btn-dup { opacity: 1; }
+        .timeline-item .btn-dup:hover { color: #10b981; background: rgba(16,185,129,0.1); }
+
+        /* Сворачивание таймлайна */
+        .timeline-wrapper {
+            display: flex; width: 148px; min-width: 148px;
+            transition: width 0.3s ease, min-width 0.3s ease;
+        }
+        .timeline-wrapper .timeline { width: 100%; }
+        .timeline-collapsed { display: none; }
+        .timeline-toggle {
+            width: 20px; min-width: 20px; background: rgba(255,255,255,0.03);
+            border: none; border-right: 1px solid rgba(255,255,255,0.06);
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            color: #4a5568; font-size: 11px; transition: all 0.2s; padding: 0;
+            font-family: inherit;
+        }
+        .timeline-toggle:hover { background: rgba(255,255,255,0.07); color: #94a3b8; }
+        .timeline-wrapper.collapsed { width: 0; min-width: 0; overflow: hidden; }
+        .timeline-wrapper.collapsed .timeline { padding: 0; border-right: none; opacity: 0; }
+
+        /* Форма */
+        .form-container { flex: 1; overflow-y: auto; padding: 12px 14px 12px 12px; }
+        .form-container::-webkit-scrollbar { width: 3px; }
+        .form-container::-webkit-scrollbar-track { background: transparent; }
+        .form-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+        .form-container::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+
+        .form-section {
+            background: rgba(255,255,255,0.02); border-radius: 12px;
+            margin-bottom: 8px; overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.04);
+            transition: border-color 0.3s;
+        }
+        .form-section:hover { border-color: rgba(255,255,255,0.08); }
+        .section-header {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 14px; cursor: pointer; user-select: none;
+            transition: background 0.2s;
+        }
+        .section-header:hover { background: rgba(255,255,255,0.03); }
+        .section-header h3 {
+            margin: 0; font-size: 11px; color: #64748b;
+            text-transform: uppercase; letter-spacing: 1px; flex: 1;
+            font-weight: 600;
+        }
+        .section-chevron { font-size: 9px; color: #475569; transition: transform 0.3s ease; }
+        .section-header.collapsed .section-chevron { transform: rotate(-90deg); }
+        .section-indicator {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: transparent; transition: all 0.3s;
+        }
+        .section-indicator.filled { background: #10b981; box-shadow: 0 0 6px rgba(16,185,129,0.4); }
+        .section-body {
+            padding: 0 14px 14px 14px;
+            transition: max-height 0.35s ease, opacity 0.25s, padding 0.35s;
+            max-height: 800px; opacity: 1;
+        }
+        .section-header.collapsed + .section-body { max-height: 0; opacity: 0; padding-top: 0; padding-bottom: 0; overflow: hidden; }
+
+        label { display: block; font-size: 10px; margin-bottom: 4px; color: #4a5568; font-weight: 500; letter-spacing: 0.3px; text-transform: uppercase; }
+        input, textarea, select {
+            width: 100%; padding: 8px 10px;
+            background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 8px; color: #c8d0dc; margin-bottom: 8px; font-size: 12px;
+            font-family: inherit; transition: all 0.2s;
+        }
+        input:focus, textarea:focus, select:focus {
+            border-color: rgba(59,130,246,0.5); outline: none;
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+            background: rgba(0,0,0,0.35);
+        }
+        textarea { resize: vertical; max-height: 120px; }
+        input::placeholder, textarea::placeholder { color: #334155; }
+        input[type="checkbox"] { width: auto; margin-right: 6px; accent-color: #10b981; }
+        .inline-group { display: flex; gap: 8px; }
+        .inline-group > div { flex: 1; }
+        input[type="color"] {
+            padding: 3px; height: 34px; cursor: pointer;
+            border-radius: 8px; background: rgba(0,0,0,0.3);
+        }
+
+        /* Пресет-карточки */
+        .preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+        .preset-card {
+            background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px; padding: 6px; cursor: pointer; text-align: center;
+            transition: all 0.25s;
+        }
+        .preset-card:hover { border-color: rgba(255,255,255,0.15); transform: translateY(-1px); }
+        .preset-card.active {
+            border-color: rgba(16,185,129,0.4);
+            background: rgba(16,185,129,0.08);
+            box-shadow: 0 2px 12px rgba(16,185,129,0.1);
+        }
+        .preset-preview {
+            width: 100%; aspect-ratio: 16/9;
+            background: rgba(0,0,0,0.4); border-radius: 6px;
+            position: relative; margin-bottom: 4px;
+        }
+        .pp-title { position: absolute; background: rgba(255,255,255,0.2); border-radius: 2px; }
+        .pp-desc { position: absolute; background: rgba(255,255,255,0.08); border-radius: 2px; }
+        .pp-img { position: absolute; background: rgba(59,130,246,0.2); border: 1px dashed rgba(59,130,246,0.3); border-radius: 2px; }
+        .preset-card .preset-label { font-size: 9px; color: #4a5568; font-weight: 500; letter-spacing: 0.3px; }
+        .preset-card.active .preset-label { color: #10b981; }
+
+        /* Кнопки низа */
+        .btn-download {
+            width: 100%; padding: 13px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff; border: none; border-radius: 12px;
+            font-weight: 600; font-size: 14px; cursor: pointer;
+            box-shadow: 0 4px 16px rgba(16,185,129,0.25);
+            transition: all 0.25s; margin-top: 8px; font-family: inherit;
+            letter-spacing: 0.3px;
+        }
+        .btn-download:hover { box-shadow: 0 6px 24px rgba(16,185,129,0.35); transform: translateY(-2px); }
+        .btn-download:active { transform: translateY(0); }
+        .btn-upload {
+            width: 100%; padding: 10px;
+            background: rgba(255,255,255,0.04); color: #6b7a90;
+            border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;
+            font-weight: 500; font-size: 12px; cursor: pointer;
+            transition: all 0.2s; margin-top: 6px; font-family: inherit;
+        }
+        .btn-upload:hover { background: rgba(255,255,255,0.08); color: #94a3b8; border-color: rgba(255,255,255,0.12); }
+
+        /* === ПРАВАЯ ПАНЕЛЬ: Эмулятор === */
+        .preview-container {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            background: linear-gradient(180deg, rgba(8,10,18,0.95), rgba(12,14,22,0.98));
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.04);
+            position: relative;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+        }
+        .preview-info {
+            position: absolute; top: 16px; left: 20px;
+            font-size: 11px; color: #2d3748; font-weight: 500;
+            letter-spacing: 0.5px; text-transform: uppercase;
+        }
+
+        .glass-screen {
+            width: 853px; height: 480px; background: #05060a;
+            border: 2px solid rgba(255,255,255,0.08); border-radius: 8px;
+            position: relative; overflow: hidden;
+            box-shadow:
+                0 0 0 1px rgba(255,255,255,0.03),
+                0 20px 60px rgba(0,0,0,0.5),
+                0 0 80px rgba(56, 189, 248, 0.03),
+                inset 0 1px 0 rgba(255,255,255,0.05);
+        }
+
+        /* Элементы viewport */
+        #ui-title { position: absolute; color: white; font-family: 'Inter', sans-serif; white-space: pre-wrap; transform-origin: center; cursor: move; }
+        #ui-desc { position: absolute; color: #94a3b8; font-family: 'Inter', sans-serif; white-space: pre-wrap; transform-origin: center; cursor: move; }
+        #ui-image {
+            position: absolute; background: rgba(59,130,246,0.08);
+            border: 1.5px dashed rgba(59,130,246,0.35);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; color: rgba(59,130,246,0.6); transform-origin: center; cursor: move;
+            border-radius: 4px; font-weight: 500;
+        }
+        #ui-video {
+            position: absolute; background: rgba(16,185,129,0.06);
+            border: 1.5px dashed rgba(16,185,129,0.3);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; color: rgba(16,185,129,0.6); transform-origin: center; cursor: move;
+            border-radius: 4px; font-weight: 500;
+        }
+        #ui-qr-badge {
+            position: absolute; top: 12px; right: 12px;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white; padding: 4px 10px; border-radius: 6px;
+            font-size: 10px; font-weight: 700; display: none; z-index: 10;
+            pointer-events: none; letter-spacing: 1px;
+            box-shadow: 0 2px 8px rgba(239,68,68,0.3);
+        }
+
+        /* Выделение */
+        .element-selected {
+            outline: 2px solid #10b981 !important; outline-offset: 3px;
+            z-index: 100;
+            box-shadow: 0 0 20px rgba(16,185,129,0.15);
+        }
+        .element-dimmed { opacity: 0.2; }
+        .resize-handle {
+            position: absolute; width: 8px; height: 8px;
+            background: #10b981; border: 1.5px solid #0c0e14;
+            z-index: 101; border-radius: 2px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+        }
+        .resize-handle.nw { top:-4px; left:-4px; cursor: nw-resize; }
+        .resize-handle.ne { top:-4px; right:-4px; cursor: ne-resize; }
+        .resize-handle.sw { bottom:-4px; left:-4px; cursor: sw-resize; }
+        .resize-handle.se { bottom:-4px; right:-4px; cursor: se-resize; }
+        .resize-handle.n  { top:-4px; left:50%; transform:translateX(-50%); cursor: n-resize; }
+        .resize-handle.s  { bottom:-4px; left:50%; transform:translateX(-50%); cursor: s-resize; }
+        .resize-handle.e  { top:50%; right:-4px; transform:translateY(-50%); cursor: e-resize; }
+        .resize-handle.w  { top:50%; left:-4px; transform:translateY(-50%); cursor: w-resize; }
+
+        @keyframes pulseHighlight {
+            0%, 100% { box-shadow: 0 0 0 2px rgba(59,130,246,0.3); }
+            50%      { box-shadow: 0 0 16px 4px rgba(59,130,246,0.4); }
+        }
+        .element-highlight { animation: pulseHighlight 2s ease-in-out infinite; }
+
+        /* === TOAST === */
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column-reverse; gap: 8px; pointer-events: none; }
+        .toast {
+            padding: 12px 20px; border-radius: 12px; color: #fff;
+            font-size: 12px; font-weight: 500; min-width: 240px; max-width: 380px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4); animation: toastIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: opacity 0.3s, transform 0.3s; pointer-events: auto;
+            font-family: inherit; backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .toast.fade-out { opacity: 0; transform: translateX(30px) scale(0.95); }
+        .toast-success { background: rgba(16,185,129,0.9); }
+        .toast-error   { background: rgba(239,68,68,0.9); }
+        .toast-info    { background: rgba(59,130,246,0.85); }
+        .toast-warning { background: rgba(245,158,11,0.85); color: #1a1a1a; }
+        @keyframes toastIn { from { opacity:0; transform:translateX(40px) scale(0.9); } to { opacity:1; transform:translateX(0) scale(1); } }
+
+        /* === МОДАЛЬНЫЕ ОКНА === */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+            display: flex; align-items: center; justify-content: center; z-index: 9999;
+        }
+        .modal-dialog {
+            background: linear-gradient(165deg, #1e2433, #151922);
+            padding: 32px; border-radius: 20px; text-align: center;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+            max-width: 420px; width: 90%;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .modal-dialog p { margin-bottom: 24px; font-size: 15px; font-weight: 400; color: #94a3b8; line-height: 1.5; }
+        .modal-dialog button {
+            padding: 10px 28px; margin: 5px; border: none; border-radius: 10px;
+            cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s; font-family: inherit;
+        }
+        .modal-dialog .btn-yes { background: linear-gradient(135deg, #10b981, #059669); color: #fff; box-shadow: 0 2px 10px rgba(16,185,129,0.3); }
+        .modal-dialog .btn-yes:hover { box-shadow: 0 4px 16px rgba(16,185,129,0.4); transform: translateY(-1px); }
+        .modal-dialog .btn-no { background: rgba(255,255,255,0.06); color: #6b7a90; }
+        .modal-dialog .btn-no:hover { background: rgba(255,255,255,0.1); }
+
+        /* Валидация */
+        .validation-dialog {
+            background: linear-gradient(165deg, #1e2433, #151922);
+            padding: 28px; border-radius: 20px;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+            max-width: 480px; width: 90%; text-align: left;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .validation-dialog h3 { color: #f59e0b; margin-bottom: 16px; font-size: 15px; font-weight: 600; }
+        .validation-dialog ul { list-style: none; padding: 0; margin-bottom: 20px; max-height: 200px; overflow-y: auto; }
+        .validation-dialog li { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 12px; color: #8892a4; }
+        .validation-dialog li::before { content: "\26A0"; margin-right: 8px; color: #f59e0b; }
+        .validation-btns { display: flex; gap: 10px; justify-content: flex-end; }
+        .validation-btns button { padding: 9px 22px; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 12px; font-family: inherit; transition: all 0.2s; }
+
+        /* === КОНТЕКСТНОЕ МЕНЮ === */
+        .ctx-menu {
+            position: fixed; background: rgba(22,27,40,0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px; padding: 4px; box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+            z-index: 9998; min-width: 170px;
+        }
+        .ctx-item {
+            padding: 9px 14px; font-size: 12px; cursor: pointer;
+            color: #94a3b8; transition: all 0.15s; border-radius: 8px; font-weight: 500;
+        }
+        .ctx-item:hover { background: rgba(59,130,246,0.15); color: #e2e8f0; }
+        .ctx-item.disabled { color: #334155; pointer-events: none; }
+        .ctx-item.danger { color: #f87171; }
+        .ctx-item.danger:hover { background: rgba(239,68,68,0.15); color: #fca5a5; }
+        .ctx-sep { height: 1px; background: rgba(255,255,255,0.05); margin: 3px 8px; }
+
+        /* === ПРЕЗЕНТАЦИЯ === */
+        #presentation-overlay {
+            position: fixed; inset: 0; background: #000;
+            z-index: 9998; flex-direction: column; align-items: center;
+            justify-content: center; display: none;
+        }
+        #presentation-overlay.active { display: flex; }
+        .pres-viewport {
+            width: 90vw; max-width: 1600px; aspect-ratio: 16/9;
+            background: #05060a; position: relative; overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
+            box-shadow: 0 0 60px rgba(0,0,0,0.6);
+        }
+        .pres-controls { margin-top: 24px; display: flex; align-items: center; gap: 16px; }
+        .pres-controls button {
+            background: rgba(255,255,255,0.06); color: #94a3b8; border: 1px solid rgba(255,255,255,0.08);
+            padding: 12px 28px; border-radius: 12px; font-size: 16px; cursor: pointer;
+            transition: all 0.2s; font-family: inherit;
+        }
+        .pres-controls button:hover { background: rgba(255,255,255,0.12); color: #e2e8f0; transform: translateY(-1px); }
+        .pres-counter { color: #4a5568; font-size: 14px; min-width: 70px; text-align: center; font-weight: 600; letter-spacing: 1px; }
+        .pres-close {
+            position: absolute; top: 24px; right: 28px;
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+            color: #4a5568; font-size: 22px; cursor: pointer; z-index: 10;
+            width: 40px; height: 40px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        .pres-close:hover { color: #e2e8f0; background: rgba(255,255,255,0.1); }
+
+        /* === DROP OVERLAY === */
+        #drop-overlay {
+            position: fixed; inset: 0;
+            background: rgba(59,130,246,0.06); backdrop-filter: blur(4px);
+            z-index: 9997; display: none; align-items: center; justify-content: center;
+        }
+        #drop-overlay.active { display: flex; }
+        .drop-zone-visual {
+            border: 2px dashed rgba(59,130,246,0.4); border-radius: 24px;
+            padding: 60px 80px; font-size: 20px; color: #3b82f6;
+            background: rgba(0,0,0,0.3); font-weight: 500; letter-spacing: 0.3px;
+        }
+
+        /* Shortcuts hint */
+        .shortcuts-hint {
+            position: absolute; bottom: 14px; right: 18px;
+            font-size: 10px; color: #1e293b; font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+    </style>
+</head>
+<body>
+    <!-- ЛЕВАЯ ПАНЕЛЬ -->
+    <div class="controls-panel">
+        <div class="panel-header">
+            <div class="panel-title">AR Course<span>Editor</span></div>
+            <div class="hdr-btn-group">
+                <button id="btn-undo" class="hdr-btn" onclick="undo()" disabled title="Ctrl+Z">&#x21A9;</button>
+                <button id="btn-redo" class="hdr-btn" onclick="redo()" disabled title="Ctrl+Shift+Z">&#x21AA;</button>
+            </div>
+            <button class="hdr-btn" onclick="enterPresentation()" title="Презентация">&#x25B6;</button>
+            <button class="hdr-btn" onclick="duplicateStep(activeStepIndex)" title="Дублировать (Ctrl+D)">&#x2398;</button>
+            <button class="hdr-btn primary" onclick="addStep()" title="Добавить шаг">+</button>
+            <div class="menu-anchor">
+                <button class="hdr-btn" onclick="toggleActionMenu(event)" id="menu-trigger" title="Действия">&#x22EE;</button>
+                <div class="action-menu" id="action-menu">
+                    <button class="menu-item" onclick="document.getElementById('file-uploader').click(); closeActionMenu()">
+                        <span class="mi-icon">&#x2191;</span>Загрузить JSON
+                    </button>
+                    <button class="menu-item" onclick="downloadJSON(); closeActionMenu()">
+                        <span class="mi-icon">&#x2193;</span>Скачать JSON<span class="mi-key">Ctrl+S</span>
+                    </button>
+                    <div class="menu-sep"></div>
+                    <button class="menu-item danger" onclick="deleteCurrentStep(); closeActionMenu()">
+                        <span class="mi-icon">&#x2715;</span>Удалить шаг<span class="mi-key">Del</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timeline + Form -->
+        <div class="panel-body">
+            <div class="timeline-wrapper" id="timeline-wrapper">
+                <div class="timeline" id="timeline-container"></div>
+            </div>
+            <button class="timeline-toggle" id="timeline-toggle" onclick="toggleTimeline()">&#x25C0;</button>
+
+            <div class="form-container" id="editor-form">
+                <!-- Контент -->
+                <div class="form-section" data-section="content">
+                    <div class="section-header" onclick="toggleSection(this)">
+                        <span class="section-chevron">&#x25BC;</span>
+                        <h3>Контент</h3>
+                        <span class="section-indicator"></span>
+                    </div>
+                    <div class="section-body">
+                        <label>Заголовок шага</label>
+                        <input type="text" id="inp-title" oninput="updateCurrentStep()">
+                        <label>Текстовое описание инструкции</label>
+                        <textarea id="inp-desc" rows="3" oninput="updateCurrentStep()"></textarea>
+                    </div>
+                </div>
+
+                <!-- Файлы -->
+                <div class="form-section" data-section="files">
+                    <div class="section-header collapsed" onclick="toggleSection(this)">
+                        <span class="section-chevron">&#x25BC;</span>
+                        <h3>Файлы</h3>
+                        <span class="section-indicator"></span>
+                    </div>
+                    <div class="section-body">
+                        <label>Имя картинки (например: step1.png)</label>
+                        <input type="text" id="inp-imageName" oninput="updateCurrentStep()">
+                        <label>Имя видеоролика (например: clip1.mp4)</label>
+                        <input type="text" id="inp-videoName" oninput="updateCurrentStep()">
+                        <label>Имя аудиозаписи (например: voice1.mp3)</label>
+                        <input type="text" id="inp-audioName" oninput="updateCurrentStep()">
+                    </div>
+                </div>
+
+                <!-- Шаблон верстки -->
+                <div class="form-section" data-section="layout">
+                    <div class="section-header collapsed" onclick="toggleSection(this)">
+                        <span class="section-chevron">&#x25BC;</span>
+                        <h3>Шаблон верстки</h3>
+                        <span class="section-indicator"></span>
+                    </div>
+                    <div class="section-body">
+                        <label>Пресет отображения</label>
+                        <div class="preset-grid">
+                            <div class="preset-card active" data-value="0" onclick="selectPreset(0)">
+                                <div class="preset-preview">
+                                    <div class="pp-title" style="left:5%;top:10%;width:50%;height:10%;"></div>
+                                    <div class="pp-desc" style="left:5%;top:25%;width:50%;height:40%;"></div>
+                                    <div class="pp-img" style="right:5%;top:10%;width:35%;height:55%;"></div>
+                                </div>
+                                <span class="preset-label">StandardAR</span>
+                            </div>
+                            <div class="preset-card" data-value="1" onclick="selectPreset(1)">
+                                <div class="preset-preview">
+                                    <div class="pp-title" style="left:15%;top:10%;width:70%;height:10%;"></div>
+                                    <div class="pp-desc" style="left:15%;top:25%;width:70%;height:40%;"></div>
+                                </div>
+                                <span class="preset-label">CenterFocus</span>
+                            </div>
+                            <div class="preset-card" data-value="2" onclick="selectPreset(2)">
+                                <div class="preset-preview">
+                                    <div class="pp-img" style="left:10%;top:10%;width:80%;height:75%;"></div>
+                                </div>
+                                <span class="preset-label">MediaOnly</span>
+                            </div>
+                            <div class="preset-card" data-value="3" onclick="selectPreset(3)">
+                                <div class="preset-preview">
+                                    <div class="pp-title" style="left:8%;top:5%;width:38%;height:8%;"></div>
+                                    <div class="pp-desc" style="left:8%;top:18%;width:38%;height:30%;"></div>
+                                    <div class="pp-img" style="left:52%;top:5%;width:40%;height:43%;"></div>
+                                </div>
+                                <span class="preset-label">Custom</span>
+                            </div>
+                        </div>
+                        <select id="inp-layoutPreset" style="display:none;" onchange="updateCurrentStep()">
+                            <option value="0">StandardAR</option>
+                            <option value="1">CenterFocus</option>
+                            <option value="2">MediaOnly</option>
+                            <option value="3">Custom</option>
+                        </select>
+                        <div id="font-name-group" style="display:none; margin-top:5px;">
+                            <label>Имя TMP-шрифта в Unity Resources</label>
+                            <input type="text" id="inp-customFontName" oninput="updateCurrentStep()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Верификация -->
+                <div class="form-section" data-section="verification">
+                    <div class="section-header collapsed" onclick="toggleSection(this)">
+                        <span class="section-chevron">&#x25BC;</span>
+                        <h3>Верификация</h3>
+                        <span class="section-indicator"></span>
+                    </div>
+                    <div class="section-body">
+                        <label><input type="checkbox" id="inp-requireQR" onchange="updateCurrentStep()"> Требовать проверку QR/Голоса</label>
+                        <div id="qr-text-group" style="display:none; margin-top:5px;">
+                            <label>Ожидаемый кодовый текст</label>
+                            <input type="text" id="inp-expectedQR" oninput="updateCurrentStep()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Кастомная геометрия -->
+                <div class="form-section" data-section="geometry" id="custom-geometry-section" style="display: none;">
+                    <div class="section-header" onclick="toggleSection(this)">
+                        <span class="section-chevron">&#x25BC;</span>
+                        <h3>Кастомная геометрия (Custom)</h3>
+                        <span class="section-indicator"></span>
+                    </div>
+                    <div class="section-body">
+                        <label style="font-weight: bold; color: #fff;">[Координаты Заголовка]</label>
+                        <div class="inline-group">
+                            <div><label>X</label><input type="number" id="inp-tX" oninput="updateCurrentStep()"></div>
+                            <div><label>Y</label><input type="number" id="inp-tY" oninput="updateCurrentStep()"></div>
+                        </div>
+                        <div class="inline-group">
+                            <div><label>Ширина</label><input type="number" id="inp-tW" oninput="updateCurrentStep()"></div>
+                            <div><label>Высота</label><input type="number" id="inp-tH" oninput="updateCurrentStep()"></div>
+                        </div>
+                        <div class="inline-group">
+                            <div><label>Шрифт</label><input type="number" id="inp-tSize" oninput="updateCurrentStep()"></div>
+                            <div><label>Стиль (0/1)</label><input type="number" id="inp-tStyle" oninput="updateCurrentStep()"></div>
+                        </div>
+                        <div class="inline-group">
+                            <div><label>Цвет</label><input type="color" id="inp-tColor" value="#ffffff" oninput="updateCurrentStep()"></div>
+                        </div>
+
+                        <label style="font-weight: bold; color: #fff; margin-top: 10px;">[Координаты Описания]</label>
+                        <div class="inline-group">
+                            <div><label>X</label><input type="number" id="inp-dX" oninput="updateCurrentStep()"></div>
+                            <div><label>Y</label><input type="number" id="inp-dY" oninput="updateCurrentStep()"></div>
+                        </div>
+                        <div class="inline-group">
+                            <div><label>Ширина</label><input type="number" id="inp-dW" oninput="updateCurrentStep()"></div>
+                            <div><label>Высота</label><input type="number" id="inp-dH" oninput="updateCurrentStep()"></div>
+                        </div>
+                        <div class="inline-group">
+                            <div><label>Шрифт</label><input type="number" id="inp-dSize" oninput="updateCurrentStep()"></div>
+                            <div><label>Стиль (0/2)</label><input type="number" id="inp-dStyle" oninput="updateCurrentStep()"></div>
+                        </div>
+                        <div class="inline-group">
+                            <div><label>Цвет</label><input type="color" id="inp-dColor" value="#d9d9d9" oninput="updateCurrentStep()"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Геометрия медиа -->
+                <div class="form-section" data-section="media" id="media-geometry-section">
+                    <div class="section-header collapsed" onclick="toggleSection(this)">
+                        <span class="section-chevron">&#x25BC;</span>
+                        <h3>Геометрия медиа</h3>
+                        <span class="section-indicator"></span>
+                    </div>
+                    <div class="section-body">
+                        <div id="geo-image-box" style="display: none;">
+                            <label style="color: #0078d4; font-weight: bold;">[Картинка]</label>
+                            <div class="inline-group">
+                                <div><label>X</label><input type="number" id="inp-imgX" oninput="updateCurrentStep()"></div>
+                                <div><label>Y</label><input type="number" id="inp-imgY" oninput="updateCurrentStep()"></div>
+                            </div>
+                            <div class="inline-group">
+                                <div><label>Ширина</label><input type="number" id="inp-imgW" oninput="updateCurrentStep()"></div>
+                                <div><label>Высота</label><input type="number" id="inp-imgH" oninput="updateCurrentStep()"></div>
+                            </div>
+                            <div class="inline-group">
+                                <div><label>Scale X</label><input type="number" id="inp-imgScaleX" step="0.1" oninput="updateCurrentStep()"></div>
+                                <div><label>Scale Y</label><input type="number" id="inp-imgScaleY" step="0.1" oninput="updateCurrentStep()"></div>
+                            </div>
+                        </div>
+                        <div id="geo-video-box" style="display: none; margin-top: 10px;">
+                            <label style="color: #00ff44; font-weight: bold;">[Видео]</label>
+                            <div class="inline-group">
+                                <div><label>X</label><input type="number" id="inp-vidX" oninput="updateCurrentStep()"></div>
+                                <div><label>Y</label><input type="number" id="inp-vidY" oninput="updateCurrentStep()"></div>
+                            </div>
+                            <div class="inline-group">
+                                <div><label>Ширина</label><input type="number" id="inp-vidW" oninput="updateCurrentStep()"></div>
+                                <div><label>Высота</label><input type="number" id="inp-vidH" oninput="updateCurrentStep()"></div>
+                            </div>
+                            <div class="inline-group">
+                                <div><label>Scale X</label><input type="number" id="inp-vidScaleX" step="0.1" oninput="updateCurrentStep()"></div>
+                                <div><label>Scale Y</label><input type="number" id="inp-vidScaleY" step="0.1" oninput="updateCurrentStep()"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <input type="file" id="file-uploader" accept=".json" style="display: none;" onchange="uploadJSON(event)">
+        <div style="padding: 0 14px 14px 14px;">
+            <button class="btn-download" onclick="downloadJSON()">Скачать course.json</button>
+        </div>
+    </div>
+
+    <!-- ПРАВАЯ ПАНЕЛЬ: Эмулятор -->
+    <div class="preview-container">
+        <div class="preview-info">Эмулятор экрана Epson (1920 x 1080)</div>
+        <div class="glass-screen" id="viewport">
+            <div id="ui-title">Заголовок шага</div>
+            <div id="ui-desc">Описание инструкции...</div>
+            <div id="ui-image">[Картинка]</div>
+            <div id="ui-video">[Видео]</div>
+            <div id="ui-qr-badge">QR</div>
+        </div>
+        <div class="shortcuts-hint">Ctrl+Z Undo | Ctrl+S Save | Ctrl+D Dup | ← → Steps</div>
+    </div>
+
+    <!-- Toast контейнер -->
+    <div id="toast-container"></div>
+
+    <!-- Презентация -->
+    <div id="presentation-overlay">
+        <button class="pres-close" onclick="exitPresentation()">&#x2715;</button>
+        <div class="pres-viewport" id="pres-viewport"></div>
+        <div class="pres-controls">
+            <button onclick="presPrev()">&#x25C0;</button>
+            <span class="pres-counter" id="pres-counter">1 / 1</span>
+            <button onclick="presNext()">&#x25B6;</button>
+        </div>
+    </div>
+
+    <!-- Drop overlay -->
+    <div id="drop-overlay">
+        <div class="drop-zone-visual">Перетащите course.json сюда</div>
+    </div>
+
+    <script>
+    // ============================================================
+    // DATA MODEL
+    // ============================================================
+    let courseData = {
+        steps: [{
+            title: "Шаг 1: Подготовка рабочего места",
+            description: "Убедитесь в наличии защитных перчаток. Разложите инструменты на столе и отсканируйте код готовности оборудования.",
+            imageName: "shema.png", audioName: "voice1.mp3", videoName: "",
+            requireQRVerification: true, expectedQRText: "ЗАВОД_УЗЕЛ_1", layoutPreset: 0, customFontName: "",
+            imagePosition: {x: 500, y: -200}, imageScale: {x: 1, y: 1, z: 1}, imageSize: {x: 600, y: 500},
+            videoPosition: {x: 0, y: 0}, videoScale: {x: 1, y: 1, z: 1}, videoSize: {x: 640, y: 360},
+            titlePosition: {x: 80, y: -100}, titleSize: {x: 1000, y: 100}, titleFontSize: 45, titleColor: {r:1,g:1,b:1,a:1}, titleStyle: 0,
+            descPosition: {x: 80, y: -250}, descSize: {x: 1000, y: 400}, descFontSize: 30, descColor: {r:0.85,g:0.85,b:0.85,a:1}, descStyle: 0
+        }]
+    };
+
+    let activeStepIndex = 0;
+    const scaleFactor = 853.33 / 1920;
+
+    function createBlankStep(index) {
+        return {
+            title: "Новый шаг " + (index + 1),
+            description: "Описание действий мастера на данном этапе...",
+            imageName: "", audioName: "", videoName: "",
+            requireQRVerification: false, expectedQRText: "", layoutPreset: 0, customFontName: "",
+            imagePosition: {x: 600, y: -250}, imageScale: {x: 1, y: 1, z: 1}, imageSize: {x: 500, y: 500},
+            videoPosition: {x: 600, y: -250}, videoScale: {x: 1, y: 1, z: 1}, videoSize: {x: 640, y: 360},
+            titlePosition: {x: 80, y: -100}, titleSize: {x: 1000, y: 100}, titleFontSize: 45, titleColor: {r:1,g:1,b:1,a:1}, titleStyle: 0,
+            descPosition: {x: 80, y: -250}, descSize: {x: 1000, y: 400}, descFontSize: 30, descColor: {r:0.85,g:0.85,b:0.85,a:1}, descStyle: 0
+        };
+    }
+
+    // ============================================================
+    // FEATURE 5: TOAST NOTIFICATIONS
+    // ============================================================
+    function showToast(message, type, duration) {
+        type = type || 'info';
+        duration = duration || 3000;
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = 'toast toast-' + type;
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(function() {
+            toast.classList.add('fade-out');
+            setTimeout(function() { toast.remove(); }, 300);
+        }, duration);
+    }
+
+    // ============================================================
+    // FEATURE 4: AUTOSAVE
+    // ============================================================
+    const AUTOSAVE_KEY = 'editorCourses_autosave';
+    let autosaveTimer = null;
+
+    function triggerAutosave() {
+        clearTimeout(autosaveTimer);
+        autosaveTimer = setTimeout(function() {
+            try {
+                localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(courseData));
+            } catch (e) {
+                showToast('Не удалось автосохранить: хранилище переполнено', 'warning');
+            }
+        }, 1000);
+    }
+
+    function checkAutosave() {
+        const saved = localStorage.getItem(AUTOSAVE_KEY);
+        if (!saved) return;
+        try { JSON.parse(saved); } catch(e) { localStorage.removeItem(AUTOSAVE_KEY); return; }
+
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.innerHTML = '<div class="modal-dialog">' +
+            '<p>Найден несохранённый курс. Восстановить?</p>' +
+            '<button class="btn-yes" id="autosave-yes">Да</button>' +
+            '<button class="btn-no" id="autosave-no">Нет</button></div>';
+        document.body.appendChild(overlay);
+
+        document.getElementById('autosave-yes').onclick = function() {
+            courseData = JSON.parse(saved);
+            activeStepIndex = 0;
+            renderTimeline(); loadStepToForm(0);
+            overlay.remove();
+            showToast('Курс восстановлен из автосохранения', 'success');
+        };
+        document.getElementById('autosave-no').onclick = function() {
+            localStorage.removeItem(AUTOSAVE_KEY);
+            overlay.remove();
+        };
+    }
+
+    // ============================================================
+    // FEATURE 3: UNDO / REDO
+    // ============================================================
+    let undoStack = [];
+    let redoStack = [];
+    let historyTimer = null;
+    const MAX_HISTORY = 50;
+
+    function pushHistory() {
+        clearTimeout(historyTimer);
+        historyTimer = setTimeout(function() {
+            const snapshot = JSON.stringify(courseData);
+            if (undoStack.length > 0 && undoStack[undoStack.length - 1] === snapshot) return;
+            undoStack.push(snapshot);
+            if (undoStack.length > MAX_HISTORY) undoStack.shift();
+            redoStack = [];
+            updateUndoRedoButtons();
+        }, 300);
+    }
+
+    function pushHistoryImmediate() {
+        const snapshot = JSON.stringify(courseData);
+        if (undoStack.length > 0 && undoStack[undoStack.length - 1] === snapshot) return;
+        undoStack.push(snapshot);
+        if (undoStack.length > MAX_HISTORY) undoStack.shift();
+        redoStack = [];
+        updateUndoRedoButtons();
+    }
+
+    function undo() {
+        if (undoStack.length === 0) return;
+        redoStack.push(JSON.stringify(courseData));
+        courseData = JSON.parse(undoStack.pop());
+        activeStepIndex = Math.min(activeStepIndex, courseData.steps.length - 1);
+        renderTimeline(); loadStepToForm(activeStepIndex);
+        updateUndoRedoButtons();
+        showToast('Отменено', 'info');
+        triggerAutosave();
+    }
+
+    function redo() {
+        if (redoStack.length === 0) return;
+        undoStack.push(JSON.stringify(courseData));
+        courseData = JSON.parse(redoStack.pop());
+        activeStepIndex = Math.min(activeStepIndex, courseData.steps.length - 1);
+        renderTimeline(); loadStepToForm(activeStepIndex);
+        updateUndoRedoButtons();
+        showToast('Повторено', 'info');
+        triggerAutosave();
+    }
+
+    function updateUndoRedoButtons() {
+        document.getElementById('btn-undo').disabled = undoStack.length === 0;
+        document.getElementById('btn-redo').disabled = redoStack.length === 0;
+    }
+
+    // ============================================================
+    // FEATURE 2: TIMELINE
+    // ============================================================
+    let draggedStepIndex = null;
+
+    // Action menu
+    function toggleActionMenu(e) {
+        e.stopPropagation();
+        var menu = document.getElementById('action-menu');
+        menu.classList.toggle('open');
+        if (menu.classList.contains('open')) {
+            setTimeout(function() {
+                document.addEventListener('click', closeActionMenu, { once: true });
+            }, 0);
+        }
+    }
+    function closeActionMenu() {
+        document.getElementById('action-menu').classList.remove('open');
+    }
+
+    function toggleTimeline() {
+        var wrapper = document.getElementById('timeline-wrapper');
+        var btn = document.getElementById('timeline-toggle');
+        wrapper.classList.toggle('collapsed');
+        btn.innerHTML = wrapper.classList.contains('collapsed') ? '&#x25B6;' : '&#x25C0;';
+    }
+
+    function renderTimeline() {
+        const container = document.getElementById('timeline-container');
+        container.innerHTML = '';
+        courseData.steps.forEach(function(step, idx) {
+            const item = document.createElement('div');
+            item.className = 'timeline-item' + (idx === activeStepIndex ? ' active' : '');
+            item.draggable = true;
+            item.dataset.index = idx;
+
+            const hasImg = step.imageName ? ' has' : '';
+            const hasVid = step.videoName ? ' has' : '';
+            const hasAud = step.audioName ? ' has' : '';
+            const hasQR  = step.requireQRVerification ? ' has' : '';
+
+            item.innerHTML =
+                '<div class="step-num">Шаг ' + (idx + 1) + '</div>' +
+                '<div class="step-title">' + escapeHtml(step.title) + '</div>' +
+                '<div class="step-icons">' +
+                    '<span class="' + hasImg.trim() + '">IMG</span>' +
+                    '<span class="' + hasVid.trim() + '">VID</span>' +
+                    '<span class="' + hasAud.trim() + '">AUD</span>' +
+                    '<span class="' + hasQR.trim() + '">QR</span>' +
+                '</div>' +
+                '<button class="btn-dup" title="Дублировать">&#x2398;</button>';
+
+            item.querySelector('.btn-dup').addEventListener('click', function(e) {
+                e.stopPropagation();
+                duplicateStep(idx);
+            });
+
+            item.addEventListener('click', function() { selectStep(idx); });
+            item.addEventListener('contextmenu', function(e) { showStepContextMenu(e, idx); });
+
+            // Drag reorder
+            item.addEventListener('dragstart', function(e) {
+                draggedStepIndex = idx;
+                e.dataTransfer.effectAllowed = 'move';
+                setTimeout(function() { item.style.opacity = '0.4'; }, 0);
+            });
+            item.addEventListener('dragend', function() {
+                item.style.opacity = '';
+                draggedStepIndex = null;
+                container.querySelectorAll('.timeline-item').forEach(function(el) {
+                    el.classList.remove('drag-over-top', 'drag-over-bottom');
+                });
+            });
+            item.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                container.querySelectorAll('.timeline-item').forEach(function(el) {
+                    el.classList.remove('drag-over-top', 'drag-over-bottom');
+                });
+                var rect = item.getBoundingClientRect();
+                if (e.clientY < rect.top + rect.height / 2) {
+                    item.classList.add('drag-over-top');
+                } else {
+                    item.classList.add('drag-over-bottom');
+                }
+            });
+            item.addEventListener('drop', function(e) {
+                e.preventDefault();
+                if (draggedStepIndex === null) return;
+                var rect = item.getBoundingClientRect();
+                var targetIdx = idx;
+                if (e.clientY >= rect.top + rect.height / 2) targetIdx++;
+                if (draggedStepIndex === targetIdx || draggedStepIndex === targetIdx - 1) return;
+                pushHistoryImmediate();
+                var moved = courseData.steps.splice(draggedStepIndex, 1)[0];
+                var insertAt = draggedStepIndex < targetIdx ? targetIdx - 1 : targetIdx;
+                courseData.steps.splice(insertAt, 0, moved);
+                activeStepIndex = insertAt;
+                renderTimeline(); loadStepToForm(activeStepIndex);
+                triggerAutosave();
+                showToast('Шаг перемещён', 'info');
+            });
+
+            container.appendChild(item);
+        });
+    }
+
+    function escapeHtml(text) {
+        var d = document.createElement('div');
+        d.textContent = text;
+        return d.innerHTML;
+    }
+
+    // Context menu
+    let clipboardStep = null;
+
+    function showStepContextMenu(e, idx) {
+        e.preventDefault();
+        removeContextMenu();
+        var menu = document.createElement('div');
+        menu.className = 'ctx-menu';
+        menu.id = 'context-menu';
+
+        var maxX = window.innerWidth - 180;
+        var maxY = window.innerHeight - 180;
+        menu.style.left = Math.min(e.clientX, maxX) + 'px';
+        menu.style.top = Math.min(e.clientY, maxY) + 'px';
+
+        menu.innerHTML =
+            '<div class="ctx-item" data-action="copy">Копировать шаг</div>' +
+            '<div class="ctx-item' + (clipboardStep ? '' : ' disabled') + '" data-action="paste">Вставить после</div>' +
+            '<div class="ctx-sep"></div>' +
+            '<div class="ctx-item" data-action="duplicate">Дублировать</div>' +
+            '<div class="ctx-sep"></div>' +
+            '<div class="ctx-item danger" data-action="delete">Удалить</div>';
+
+        document.body.appendChild(menu);
+
+        menu.addEventListener('click', function(ev) {
+            var action = ev.target.dataset.action;
+            if (!action) return;
+            if (action === 'copy') {
+                clipboardStep = JSON.parse(JSON.stringify(courseData.steps[idx]));
+                showToast('Шаг скопирован', 'info');
+            }
+            if (action === 'paste' && clipboardStep) {
+                pushHistoryImmediate();
+                courseData.steps.splice(idx + 1, 0, JSON.parse(JSON.stringify(clipboardStep)));
+                renderTimeline(); selectStep(idx + 1);
+                showToast('Шаг вставлен', 'success');
+                triggerAutosave();
+            }
+            if (action === 'duplicate') duplicateStep(idx);
+            if (action === 'delete') {
+                selectStep(idx);
+                deleteCurrentStep();
+            }
+            removeContextMenu();
+        });
+
+        setTimeout(function() {
+            document.addEventListener('click', removeContextMenu, { once: true });
+        }, 0);
+    }
+
+    function removeContextMenu() {
+        var m = document.getElementById('context-menu');
+        if (m) m.remove();
+    }
+
+    function duplicateStep(idx) {
+        pushHistoryImmediate();
+        var copy = JSON.parse(JSON.stringify(courseData.steps[idx]));
+        copy.title += ' (копия)';
+        courseData.steps.splice(idx + 1, 0, copy);
+        renderTimeline(); selectStep(idx + 1);
+        showToast('Шаг дублирован', 'success');
+        triggerAutosave();
+    }
+
+    // ============================================================
+    // CORE NAVIGATION
+    // ============================================================
+    function selectStep(idx) {
+        activeStepIndex = idx;
+        clearSelection();
+        renderTimeline();
+        loadStepToForm(idx);
+    }
+
+    function addStep() {
+        pushHistoryImmediate();
+        courseData.steps.push(createBlankStep(courseData.steps.length));
+        selectStep(courseData.steps.length - 1);
+        showToast('Шаг добавлен', 'success');
+        triggerAutosave();
+    }
+
+    function deleteCurrentStep() {
+        if (courseData.steps.length <= 1) {
+            showToast('Нельзя удалить единственный шаг', 'warning');
+            return;
+        }
+        pushHistoryImmediate();
+        courseData.steps.splice(activeStepIndex, 1);
+        activeStepIndex = Math.max(0, activeStepIndex - 1);
+        renderTimeline();
+        loadStepToForm(activeStepIndex);
+        showToast('Шаг удалён', 'info');
+        triggerAutosave();
+    }
+
+    // ============================================================
+    // FEATURE 6: COLLAPSIBLE SECTIONS
+    // ============================================================
+    function toggleSection(headerEl) {
+        headerEl.classList.toggle('collapsed');
+    }
+
+    function updateSectionIndicators() {
+        var s = courseData.steps[activeStepIndex];
+        setIndicator('content', s.title && !s.title.startsWith('Новый шаг'));
+        setIndicator('files', !!(s.imageName || s.videoName || s.audioName));
+        setIndicator('layout', s.layoutPreset !== 0);
+        setIndicator('verification', s.requireQRVerification);
+        setIndicator('geometry', s.layoutPreset === 3);
+        setIndicator('media', !!(s.imageName || s.videoName));
+    }
+
+    function setIndicator(sectionKey, isFilled) {
+        var section = document.querySelector('[data-section="' + sectionKey + '"] .section-indicator');
+        if (section) {
+            if (isFilled) section.classList.add('filled');
+            else section.classList.remove('filled');
+        }
+    }
+
+    // ============================================================
+    // FEATURE 7: PRESET CARDS
+    // ============================================================
+    function selectPreset(value) {
+        document.getElementById('inp-layoutPreset').value = value;
+        document.querySelectorAll('.preset-card').forEach(function(c) {
+            if (parseInt(c.dataset.value) === value) c.classList.add('active');
+            else c.classList.remove('active');
+        });
+        updateCurrentStep();
+    }
+
+    function syncPresetCards(layoutPreset) {
+        document.querySelectorAll('.preset-card').forEach(function(c) {
+            if (parseInt(c.dataset.value) === layoutPreset) c.classList.add('active');
+            else c.classList.remove('active');
+        });
+    }
+
+    // ============================================================
+    // FORM LOAD / SAVE
+    // ============================================================
+    function loadStepToForm(idx) {
+        var s = courseData.steps[idx];
+        document.getElementById("inp-title").value = s.title;
+        document.getElementById("inp-desc").value = s.description;
+        document.getElementById("inp-imageName").value = s.imageName;
+        document.getElementById("inp-videoName").value = s.videoName;
+        document.getElementById("inp-audioName").value = s.audioName;
+        document.getElementById("inp-layoutPreset").value = s.layoutPreset;
+        document.getElementById("inp-customFontName").value = s.customFontName || "";
+        document.getElementById("inp-requireQR").checked = s.requireQRVerification;
+        document.getElementById("inp-expectedQR").value = s.expectedQRText;
+
+        document.getElementById("inp-tX").value = s.titlePosition.x;
+        document.getElementById("inp-tY").value = s.titlePosition.y;
+        document.getElementById("inp-tW").value = s.titleSize.x;
+        document.getElementById("inp-tH").value = s.titleSize.y;
+        document.getElementById("inp-tSize").value = s.titleFontSize;
+        document.getElementById("inp-tStyle").value = s.titleStyle;
+
+        document.getElementById("inp-dX").value = s.descPosition.x;
+        document.getElementById("inp-dY").value = s.descPosition.y;
+        document.getElementById("inp-dW").value = s.descSize.x;
+        document.getElementById("inp-dH").value = s.descSize.y;
+        document.getElementById("inp-dSize").value = s.descFontSize;
+        document.getElementById("inp-dStyle").value = s.descStyle;
+
+        document.getElementById("inp-imgX").value = s.imagePosition.x;
+        document.getElementById("inp-imgY").value = s.imagePosition.y;
+        document.getElementById("inp-imgW").value = s.imageSize.x;
+        document.getElementById("inp-imgH").value = s.imageSize.y;
+        document.getElementById("inp-imgScaleX").value = s.imageScale ? s.imageScale.x : 1;
+        document.getElementById("inp-imgScaleY").value = s.imageScale ? s.imageScale.y : 1;
+
+        document.getElementById("inp-vidX").value = s.videoPosition.x;
+        document.getElementById("inp-vidY").value = s.videoPosition.y;
+        document.getElementById("inp-vidW").value = s.videoSize.x;
+        document.getElementById("inp-vidH").value = s.videoSize.y;
+        document.getElementById("inp-vidScaleX").value = s.videoScale ? s.videoScale.x : 1;
+        document.getElementById("inp-vidScaleY").value = s.videoScale ? s.videoScale.y : 1;
+
+        document.getElementById("inp-tColor").value = rgbToHex(s.titleColor);
+        document.getElementById("inp-dColor").value = rgbToHex(s.descColor);
+
+        syncPresetCards(s.layoutPreset);
+        updateUIOutputs();
+    }
+
+    function updateCurrentStep() {
+        pushHistory();
+        var s = courseData.steps[activeStepIndex];
+        s.title = document.getElementById("inp-title").value;
+        s.description = document.getElementById("inp-desc").value;
+        s.imageName = document.getElementById("inp-imageName").value;
+        s.videoName = document.getElementById("inp-videoName").value;
+        s.audioName = document.getElementById("inp-audioName").value;
+        s.layoutPreset = parseInt(document.getElementById("inp-layoutPreset").value);
+        s.customFontName = document.getElementById("inp-customFontName").value;
+        s.requireQRVerification = document.getElementById("inp-requireQR").checked;
+        s.expectedQRText = document.getElementById("inp-expectedQR").value;
+
+        s.titlePosition.x = parseFloat(document.getElementById("inp-tX").value) || 0;
+        s.titlePosition.y = parseFloat(document.getElementById("inp-tY").value) || 0;
+        s.titleSize.x = parseFloat(document.getElementById("inp-tW").value) || 1000;
+        s.titleSize.y = parseFloat(document.getElementById("inp-tH").value) || 100;
+        s.titleFontSize = parseFloat(document.getElementById("inp-tSize").value) || 45;
+        s.titleStyle = parseInt(document.getElementById("inp-tStyle").value) || 0;
+
+        s.descPosition.x = parseFloat(document.getElementById("inp-dX").value) || 0;
+        s.descPosition.y = parseFloat(document.getElementById("inp-dY").value) || 0;
+        s.descSize.x = parseFloat(document.getElementById("inp-dW").value) || 1000;
+        s.descSize.y = parseFloat(document.getElementById("inp-dH").value) || 400;
+        s.descFontSize = parseFloat(document.getElementById("inp-dSize").value) || 30;
+        s.descStyle = parseInt(document.getElementById("inp-dStyle").value) || 0;
+
+        s.imagePosition.x = parseFloat(document.getElementById("inp-imgX").value) || 0;
+        s.imagePosition.y = parseFloat(document.getElementById("inp-imgY").value) || 0;
+        s.imageSize.x = parseFloat(document.getElementById("inp-imgW").value) || 500;
+        s.imageSize.y = parseFloat(document.getElementById("inp-imgH").value) || 500;
+        if (!s.imageScale) s.imageScale = {x: 1, y: 1, z: 1};
+        s.imageScale.x = parseFloat(document.getElementById("inp-imgScaleX").value) || 1;
+        s.imageScale.y = parseFloat(document.getElementById("inp-imgScaleY").value) || 1;
+
+        s.videoPosition.x = parseFloat(document.getElementById("inp-vidX").value) || 0;
+        s.videoPosition.y = parseFloat(document.getElementById("inp-vidY").value) || 0;
+        s.videoSize.x = parseFloat(document.getElementById("inp-vidW").value) || 640;
+        s.videoSize.y = parseFloat(document.getElementById("inp-vidH").value) || 360;
+        if (!s.videoScale) s.videoScale = {x: 1, y: 1, z: 1};
+        s.videoScale.x = parseFloat(document.getElementById("inp-vidScaleX").value) || 1;
+        s.videoScale.y = parseFloat(document.getElementById("inp-vidScaleY").value) || 1;
+
+        s.titleColor = hexToRgb(document.getElementById("inp-tColor").value);
+        s.descColor = hexToRgb(document.getElementById("inp-dColor").value);
+
+        updateUIOutputs();
+        renderTimeline();
+        triggerAutosave();
+    }
+
+    // ============================================================
+    // UI OUTPUTS (viewport rendering)
+    // ============================================================
+    function updateUIOutputs() {
+        var s = courseData.steps[activeStepIndex];
+
+        document.getElementById("qr-text-group").style.display = s.requireQRVerification ? "block" : "none";
+        document.getElementById("custom-geometry-section").style.display = s.layoutPreset === 3 ? "block" : "none";
+        document.getElementById("font-name-group").style.display = s.layoutPreset === 3 ? "block" : "none";
+        document.getElementById("geo-image-box").style.display = s.imageName ? "block" : "none";
+        document.getElementById("geo-video-box").style.display = s.videoName ? "block" : "none";
+        document.getElementById("ui-qr-badge").style.display = s.requireQRVerification ? "block" : "none";
+
+        var tEl = document.getElementById("ui-title");
+        var dEl = document.getElementById("ui-desc");
+        var iEl = document.getElementById("ui-image");
+        var vEl = document.getElementById("ui-video");
+
+        tEl.style.display = s.layoutPreset === 2 ? "none" : "block";
+        dEl.style.display = s.layoutPreset === 2 ? "none" : "block";
+        iEl.style.display = s.imageName ? "flex" : "none";
+        vEl.style.display = s.videoName ? "flex" : "none";
+
+        tEl.innerText = s.title;
+        dEl.innerText = s.description;
+
+        if (s.layoutPreset !== 3) {
+            tEl.style.fontSize = (45 * scaleFactor) + "px";
+            tEl.style.fontWeight = "normal"; tEl.style.fontStyle = "normal"; tEl.style.color = "#fff";
+            dEl.style.fontSize = (30 * scaleFactor) + "px";
+            dEl.style.fontWeight = "normal"; dEl.style.fontStyle = "normal"; dEl.style.color = "#d9d9d9";
+
+            if (s.layoutPreset === 1) {
+                tEl.style.left = "0px"; tEl.style.top = "40px"; tEl.style.width = "100%"; tEl.style.height = "auto"; tEl.style.textAlign = "center";
+                dEl.style.left = "0px"; dEl.style.top = "110px"; dEl.style.width = "100%"; dEl.style.height = "auto"; dEl.style.textAlign = "center";
+            } else {
+                tEl.style.left = "40px"; tEl.style.top = "40px"; tEl.style.width = "60%"; tEl.style.height = "auto"; tEl.style.textAlign = "left";
+                dEl.style.left = "40px"; dEl.style.top = "110px"; dEl.style.width = "60%"; dEl.style.height = "auto"; dEl.style.textAlign = "left";
+            }
+        } else {
+            applyUnityTransform(tEl, s.titlePosition, s.titleSize);
+            tEl.style.fontSize = (s.titleFontSize * scaleFactor) + "px";
+            tEl.style.fontWeight = s.titleStyle === 1 ? "bold" : "normal";
+            tEl.style.fontStyle = s.titleStyle === 2 ? "italic" : "normal";
+            tEl.style.textAlign = "left";
+            tEl.style.color = document.getElementById("inp-tColor").value;
+
+            applyUnityTransform(dEl, s.descPosition, s.descSize);
+            dEl.style.fontSize = (s.descFontSize * scaleFactor) + "px";
+            dEl.style.fontWeight = s.descStyle === 1 ? "bold" : "normal";
+            dEl.style.fontStyle = s.descStyle === 2 ? "italic" : "normal";
+            dEl.style.textAlign = "center";
+            dEl.style.color = document.getElementById("inp-dColor").value;
+        }
+
+        if (s.imageName) {
+            applyUnityTransform(iEl, s.imagePosition, s.imageSize);
+            iEl.style.transform = 'scale(' + s.imageScale.x + ', ' + s.imageScale.y + ')';
+        }
+        if (s.videoName) {
+            applyUnityTransform(vEl, s.videoPosition, s.videoSize);
+            vEl.style.transform = 'scale(' + s.videoScale.x + ', ' + s.videoScale.y + ')';
+        }
+
+        updateSectionIndicators();
+    }
+
+    // ============================================================
+    // COORDINATE TRANSFORMS
+    // ============================================================
+    function getElementOffsets(elementId) {
+        var offsetX = 0, offsetY = 0;
+        if (elementId === "ui-title") offsetX = 200 * scaleFactor;
+        else if (elementId === "ui-desc") offsetY = -150 * scaleFactor;
+        return { x: offsetX, y: offsetY };
+    }
+
+    function applyUnityTransform(element, pos, size) {
+        var screenW = 853.33, screenH = 480;
+        var cssWidth = size.x * scaleFactor;
+        var cssHeight = size.y * scaleFactor;
+        var offsets = getElementOffsets(element.id);
+        var cssLeft = (screenW / 2) + (pos.x * scaleFactor) - (cssWidth / 2) + offsets.x;
+        var cssTop = (screenH / 2) - (pos.y * scaleFactor) - (cssHeight / 2) - offsets.y;
+        element.style.left = cssLeft + "px";
+        element.style.top = cssTop + "px";
+        element.style.width = cssWidth + "px";
+        element.style.height = cssHeight + "px";
+    }
+
+    function cssToUnityCoords(elementId, cssLeft, cssTop, cssWidth, cssHeight) {
+        var screenW = 853.33, screenH = 480;
+        var offsets = getElementOffsets(elementId);
+        var unityX = (cssLeft - screenW / 2 + cssWidth / 2 - offsets.x) / scaleFactor;
+        var unityY = (screenH / 2 - cssTop - cssHeight / 2 - offsets.y) / scaleFactor;
+        var unityW = cssWidth / scaleFactor;
+        var unityH = cssHeight / scaleFactor;
+        return { x: Math.round(unityX), y: Math.round(unityY), w: Math.round(unityW), h: Math.round(unityH) };
+    }
+
+    // ============================================================
+    // FEATURE 1: DRAG AND DROP ON PREVIEW
+    // ============================================================
+    var selectedElement = null;
+    var isDragging = false;
+    var isResizing = false;
+    var resizeDir = '';
+    var dragStartX, dragStartY, elemStartLeft, elemStartTop, elemStartW, elemStartH;
+
+    var elementFieldMap = {
+        'ui-title': { posX:'inp-tX', posY:'inp-tY', sizeW:'inp-tW', sizeH:'inp-tH', dataPos:'titlePosition', dataSize:'titleSize' },
+        'ui-desc':  { posX:'inp-dX', posY:'inp-dY', sizeW:'inp-dW', sizeH:'inp-dH', dataPos:'descPosition', dataSize:'descSize' },
+        'ui-image': { posX:'inp-imgX', posY:'inp-imgY', sizeW:'inp-imgW', sizeH:'inp-imgH', dataPos:'imagePosition', dataSize:'imageSize' },
+        'ui-video': { posX:'inp-vidX', posY:'inp-vidY', sizeW:'inp-vidW', sizeH:'inp-vidH', dataPos:'videoPosition', dataSize:'videoSize' }
+    };
+
+    function selectElement(el) {
+        clearSelection();
+        selectedElement = el;
+        el.classList.add('element-selected');
+        ['ui-title','ui-desc','ui-image','ui-video'].forEach(function(id) {
+            if (id !== el.id) {
+                var other = document.getElementById(id);
+                if (other.style.display !== 'none') other.classList.add('element-dimmed');
+            }
+        });
+        addResizeHandles(el);
+    }
+
+    function clearSelection() {
+        if (selectedElement) {
+            selectedElement.classList.remove('element-selected');
+            removeResizeHandles(selectedElement);
+        }
+        document.querySelectorAll('.element-dimmed').forEach(function(e) { e.classList.remove('element-dimmed'); });
+        selectedElement = null;
+    }
+
+    function addResizeHandles(el) {
+        ['nw','n','ne','e','se','s','sw','w'].forEach(function(dir) {
+            var h = document.createElement('div');
+            h.className = 'resize-handle ' + dir;
+            h.addEventListener('mousedown', function(e) { startResize(e, dir); });
+            el.appendChild(h);
+        });
+    }
+
+    function removeResizeHandles(el) {
+        el.querySelectorAll('.resize-handle').forEach(function(h) { h.remove(); });
+    }
+
+    function ensureCustomPreset() {
+        var s = courseData.steps[activeStepIndex];
+        if (s.layoutPreset !== 3 && (selectedElement.id === 'ui-title' || selectedElement.id === 'ui-desc')) {
+            s.layoutPreset = 3;
+            document.getElementById('inp-layoutPreset').value = 3;
+            syncPresetCards(3);
+            showToast('Переключено на Custom для ручного позиционирования', 'info');
+            // Store current visual position as Unity coords before full re-render
+            var tEl = document.getElementById('ui-title');
+            var dEl = document.getElementById('ui-desc');
+            if (tEl.style.left) {
+                var tUnity = cssToUnityCoords('ui-title', parseFloat(tEl.style.left), parseFloat(tEl.style.top), parseFloat(tEl.style.width) || 400, parseFloat(tEl.style.height) || 50);
+                s.titlePosition.x = tUnity.x; s.titlePosition.y = tUnity.y;
+                s.titleSize.x = tUnity.w; s.titleSize.y = tUnity.h;
+            }
+            if (dEl.style.left) {
+                var dUnity = cssToUnityCoords('ui-desc', parseFloat(dEl.style.left), parseFloat(dEl.style.top), parseFloat(dEl.style.width) || 400, parseFloat(dEl.style.height) || 200);
+                s.descPosition.x = dUnity.x; s.descPosition.y = dUnity.y;
+                s.descSize.x = dUnity.w; s.descSize.y = dUnity.h;
+            }
+            loadStepToForm(activeStepIndex);
+        }
+    }
+
+    function syncElementToForm(el) {
+        var mapping = elementFieldMap[el.id];
+        if (!mapping) return;
+        var unity = cssToUnityCoords(
+            el.id,
+            parseFloat(el.style.left), parseFloat(el.style.top),
+            parseFloat(el.style.width), parseFloat(el.style.height)
+        );
+        var s = courseData.steps[activeStepIndex];
+        s[mapping.dataPos].x = unity.x;
+        s[mapping.dataPos].y = unity.y;
+        s[mapping.dataSize].x = unity.w;
+        s[mapping.dataSize].y = unity.h;
+        document.getElementById(mapping.posX).value = unity.x;
+        document.getElementById(mapping.posY).value = unity.y;
+        document.getElementById(mapping.sizeW).value = unity.w;
+        document.getElementById(mapping.sizeH).value = unity.h;
+    }
+
+    function startResize(e, dir) {
+        e.preventDefault(); e.stopPropagation();
+        isResizing = true; resizeDir = dir;
+        dragStartX = e.clientX; dragStartY = e.clientY;
+        elemStartLeft = parseFloat(selectedElement.style.left);
+        elemStartTop = parseFloat(selectedElement.style.top);
+        elemStartW = parseFloat(selectedElement.style.width);
+        elemStartH = parseFloat(selectedElement.style.height);
+    }
+
+    function handleResize(e) {
+        var dx = e.clientX - dragStartX;
+        var dy = e.clientY - dragStartY;
+        var newL = elemStartLeft, newT = elemStartTop;
+        var newW = elemStartW, newH = elemStartH;
+
+        if (resizeDir.includes('e')) newW = elemStartW + dx;
+        if (resizeDir.includes('w')) { newW = elemStartW - dx; newL = elemStartLeft + dx; }
+        if (resizeDir.includes('s')) newH = elemStartH + dy;
+        if (resizeDir.includes('n')) { newH = elemStartH - dy; newT = elemStartTop + dy; }
+
+        newW = Math.max(20, newW); newH = Math.max(20, newH);
+        selectedElement.style.left = newL + 'px';
+        selectedElement.style.top = newT + 'px';
+        selectedElement.style.width = newW + 'px';
+        selectedElement.style.height = newH + 'px';
+        syncElementToForm(selectedElement);
+    }
+
+    function initDragDrop() {
+        var viewport = document.getElementById('viewport');
+        var draggables = ['ui-title','ui-desc','ui-image','ui-video'];
+
+        draggables.forEach(function(id) {
+            var el = document.getElementById(id);
+            el.addEventListener('mousedown', function(e) {
+                if (e.target.classList.contains('resize-handle')) return;
+                if (e.button !== 0) return;
+                e.preventDefault();
+                selectElement(el);
+                ensureCustomPreset();
+                isDragging = true;
+                dragStartX = e.clientX;
+                dragStartY = e.clientY;
+                elemStartLeft = parseFloat(el.style.left) || 0;
+                elemStartTop = parseFloat(el.style.top) || 0;
+            });
+        });
+
+        document.addEventListener('mousemove', function(e) {
+            if (!selectedElement) return;
+            if (isDragging) {
+                var dx = e.clientX - dragStartX;
+                var dy = e.clientY - dragStartY;
+                selectedElement.style.left = (elemStartLeft + dx) + 'px';
+                selectedElement.style.top = (elemStartTop + dy) + 'px';
+                syncElementToForm(selectedElement);
+            }
+            if (isResizing) {
+                handleResize(e);
+            }
+        });
+
+        document.addEventListener('mouseup', function() {
+            if (isDragging || isResizing) {
+                isDragging = false; isResizing = false;
+                if (selectedElement) {
+                    syncElementToForm(selectedElement);
+                    pushHistoryImmediate();
+                    triggerAutosave();
+                }
+            }
+        });
+
+        viewport.addEventListener('mousedown', function(e) {
+            if (e.target === viewport) clearSelection();
+        });
+    }
+
+    // ============================================================
+    // FEATURE 8: ACTIVE ELEMENT HIGHLIGHTING
+    // ============================================================
+    var fieldToElement = {};
+    ['inp-tX','inp-tY','inp-tW','inp-tH','inp-tSize','inp-tStyle','inp-tColor','inp-title'].forEach(function(f) { fieldToElement[f] = 'ui-title'; });
+    ['inp-dX','inp-dY','inp-dW','inp-dH','inp-dSize','inp-dStyle','inp-dColor','inp-desc'].forEach(function(f) { fieldToElement[f] = 'ui-desc'; });
+    ['inp-imgX','inp-imgY','inp-imgW','inp-imgH','inp-imgScaleX','inp-imgScaleY','inp-imageName'].forEach(function(f) { fieldToElement[f] = 'ui-image'; });
+    ['inp-vidX','inp-vidY','inp-vidW','inp-vidH','inp-vidScaleX','inp-vidScaleY','inp-videoName'].forEach(function(f) { fieldToElement[f] = 'ui-video'; });
+
+    var highlightTimeout = null;
+
+    document.addEventListener('focusin', function(e) {
+        clearHighlights();
+        var id = e.target.id;
+        if (!id || !fieldToElement[id]) return;
+        var targetEl = document.getElementById(fieldToElement[id]);
+        if (targetEl && targetEl.style.display !== 'none') {
+            targetEl.classList.add('element-highlight');
+        }
+    });
+
+    document.addEventListener('focusout', function() {
+        clearTimeout(highlightTimeout);
+        highlightTimeout = setTimeout(clearHighlights, 150);
+    });
+
+    function clearHighlights() {
+        document.querySelectorAll('.element-highlight').forEach(function(el) { el.classList.remove('element-highlight'); });
+    }
+
+    // ============================================================
+    // FEATURE 9: PRESENTATION MODE
+    // ============================================================
+    var presStepIndex = 0;
+
+    function enterPresentation() {
+        presStepIndex = activeStepIndex;
+        document.getElementById('presentation-overlay').classList.add('active');
+        renderPresStep();
+        document.addEventListener('keydown', presKeyHandler);
+    }
+
+    function exitPresentation() {
+        document.getElementById('presentation-overlay').classList.remove('active');
+        document.removeEventListener('keydown', presKeyHandler);
+    }
+
+    function presKeyHandler(e) {
+        if (e.key === 'Escape') { exitPresentation(); e.preventDefault(); }
+        if (e.key === 'ArrowRight' || e.key === ' ') { presNext(); e.preventDefault(); }
+        if (e.key === 'ArrowLeft') { presPrev(); e.preventDefault(); }
+    }
+
+    function presNext() {
+        if (presStepIndex < courseData.steps.length - 1) { presStepIndex++; renderPresStep(); }
+    }
+
+    function presPrev() {
+        if (presStepIndex > 0) { presStepIndex--; renderPresStep(); }
+    }
+
+    function renderPresStep() {
+        var s = courseData.steps[presStepIndex];
+        var vp = document.getElementById('pres-viewport');
+        var vpWidth = vp.clientWidth;
+        var presScale = vpWidth / 853.33;
+
+        vp.innerHTML = '';
+
+        var inner = document.createElement('div');
+        inner.style.cssText = 'width:853.33px;height:480px;position:absolute;top:0;left:0;transform:scale(' + presScale + ');transform-origin:top left;background:#000;';
+
+        // Title
+        if (s.layoutPreset !== 2) {
+            var t = document.createElement('div');
+            t.textContent = s.title;
+            t.style.position = 'absolute';
+            t.style.color = '#fff';
+            t.style.fontFamily = 'sans-serif';
+            t.style.whiteSpace = 'pre-wrap';
+
+            if (s.layoutPreset === 3) {
+                applyUnityTransformToPresEl(t, 'ui-title', s.titlePosition, s.titleSize);
+                t.style.fontSize = (s.titleFontSize * scaleFactor) + 'px';
+                t.style.fontWeight = s.titleStyle === 1 ? 'bold' : 'normal';
+                t.style.color = rgbToHex(s.titleColor);
+            } else if (s.layoutPreset === 1) {
+                t.style.left = '0px'; t.style.top = '40px'; t.style.width = '100%'; t.style.textAlign = 'center';
+                t.style.fontSize = (45 * scaleFactor) + 'px';
+            } else {
+                t.style.left = '40px'; t.style.top = '40px'; t.style.width = '60%'; t.style.textAlign = 'left';
+                t.style.fontSize = (45 * scaleFactor) + 'px';
+            }
+            inner.appendChild(t);
+
+            // Desc
+            var d = document.createElement('div');
+            d.textContent = s.description;
+            d.style.position = 'absolute';
+            d.style.color = '#d9d9d9';
+            d.style.fontFamily = 'sans-serif';
+            d.style.whiteSpace = 'pre-wrap';
+
+            if (s.layoutPreset === 3) {
+                applyUnityTransformToPresEl(d, 'ui-desc', s.descPosition, s.descSize);
+                d.style.fontSize = (s.descFontSize * scaleFactor) + 'px';
+                d.style.fontWeight = s.descStyle === 1 ? 'bold' : 'normal';
+                d.style.fontStyle = s.descStyle === 2 ? 'italic' : 'normal';
+                d.style.color = rgbToHex(s.descColor);
+            } else if (s.layoutPreset === 1) {
+                d.style.left = '0px'; d.style.top = '110px'; d.style.width = '100%'; d.style.textAlign = 'center';
+                d.style.fontSize = (30 * scaleFactor) + 'px';
+            } else {
+                d.style.left = '40px'; d.style.top = '110px'; d.style.width = '60%'; d.style.textAlign = 'left';
+                d.style.fontSize = (30 * scaleFactor) + 'px';
+            }
+            inner.appendChild(d);
+        }
+
+        // Image
+        if (s.imageName) {
+            var img = document.createElement('div');
+            img.style.position = 'absolute';
+            img.style.background = 'rgba(0,120,212,0.15)';
+            img.style.border = '2px dashed #0078d4';
+            img.style.display = 'flex'; img.style.alignItems = 'center'; img.style.justifyContent = 'center';
+            img.style.color = '#0078d4'; img.style.fontSize = '12px';
+            img.textContent = s.imageName;
+            applyUnityTransformToPresEl(img, 'ui-image', s.imagePosition, s.imageSize);
+            img.style.transform = 'scale(' + (s.imageScale ? s.imageScale.x : 1) + ',' + (s.imageScale ? s.imageScale.y : 1) + ')';
+            inner.appendChild(img);
+        }
+
+        // Video
+        if (s.videoName) {
+            var vid = document.createElement('div');
+            vid.style.position = 'absolute';
+            vid.style.background = 'rgba(0,255,68,0.1)';
+            vid.style.border = '2px dashed #00ff44';
+            vid.style.display = 'flex'; vid.style.alignItems = 'center'; vid.style.justifyContent = 'center';
+            vid.style.color = '#00ff44'; vid.style.fontSize = '12px';
+            vid.textContent = s.videoName;
+            applyUnityTransformToPresEl(vid, 'ui-video', s.videoPosition, s.videoSize);
+            vid.style.transform = 'scale(' + (s.videoScale ? s.videoScale.x : 1) + ',' + (s.videoScale ? s.videoScale.y : 1) + ')';
+            inner.appendChild(vid);
+        }
+
+        // QR badge
+        if (s.requireQRVerification) {
+            var qr = document.createElement('div');
+            qr.textContent = 'QR';
+            qr.style.cssText = 'position:absolute;top:10px;right:10px;background:#ff0055;color:white;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:bold;';
+            inner.appendChild(qr);
+        }
+
+        vp.appendChild(inner);
+        document.getElementById('pres-counter').textContent = (presStepIndex + 1) + ' / ' + courseData.steps.length;
+    }
+
+    function applyUnityTransformToPresEl(element, elId, pos, size) {
+        var screenW = 853.33, screenH = 480;
+        var cssWidth = size.x * scaleFactor;
+        var cssHeight = size.y * scaleFactor;
+        var offsets = getElementOffsets(elId);
+        var cssLeft = (screenW / 2) + (pos.x * scaleFactor) - (cssWidth / 2) + offsets.x;
+        var cssTop = (screenH / 2) - (pos.y * scaleFactor) - (cssHeight / 2) - offsets.y;
+        element.style.left = cssLeft + 'px';
+        element.style.top = cssTop + 'px';
+        element.style.width = cssWidth + 'px';
+        element.style.height = cssHeight + 'px';
+    }
+
+    // ============================================================
+    // FEATURE 10: ENHANCED IMPORT / EXPORT
+    // ============================================================
+
+    // Drag and drop JSON onto page
+    var dropCounter = 0;
+    document.body.addEventListener('dragenter', function(e) {
+        e.preventDefault();
+        if (e.dataTransfer.types.includes('Files')) {
+            dropCounter++;
+            document.getElementById('drop-overlay').classList.add('active');
+        }
+    });
+    document.body.addEventListener('dragleave', function() {
+        dropCounter--;
+        if (dropCounter <= 0) {
+            dropCounter = 0;
+            document.getElementById('drop-overlay').classList.remove('active');
+        }
+    });
+    document.body.addEventListener('dragover', function(e) { e.preventDefault(); });
+    document.body.addEventListener('drop', function(e) {
+        e.preventDefault();
+        dropCounter = 0;
+        document.getElementById('drop-overlay').classList.remove('active');
+        var file = e.dataTransfer.files[0];
+        if (file && file.name.endsWith('.json')) {
+            processImportFile(file);
+        } else if (file) {
+            showToast('Поддерживаются только .json файлы', 'warning');
+        }
+    });
+
+    function processImportFile(file) {
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            try {
+                var data = JSON.parse(ev.target.result);
+                if (data && Array.isArray(data.steps)) {
+                    pushHistoryImmediate();
+                    courseData = data; activeStepIndex = 0;
+                    renderTimeline(); loadStepToForm(0);
+                    showToast('Курс импортирован (' + data.steps.length + ' шагов)', 'success');
+                    triggerAutosave();
+                } else {
+                    showToast('Ошибка: отсутствует массив steps', 'error');
+                }
+            } catch (err) {
+                showToast('Ошибка JSON: ' + err.message, 'error');
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function uploadJSON(event) {
+        var file = event.target.files[0];
+        if (!file) return;
+        processImportFile(file);
+        event.target.value = "";
+    }
+
+    // Export with validation
+    function downloadJSON() {
+        var warnings = validateCourse();
+        if (warnings.length > 0) {
+            showValidationModal(warnings, performDownload);
+        } else {
+            performDownload();
+        }
+    }
+
+    function validateCourse() {
+        var warnings = [];
+        courseData.steps.forEach(function(s, i) {
+            var num = i + 1;
+            if (!s.title || s.title.startsWith('Новый шаг'))
+                warnings.push('Шаг ' + num + ': заголовок не задан');
+            if (!s.imageName && (s.imageSize.x !== 500 || s.imageSize.y !== 500))
+                warnings.push('Шаг ' + num + ': настроена геометрия картинки, но файл не указан');
+            if (!s.videoName && (s.videoSize.x !== 640 || s.videoSize.y !== 360))
+                warnings.push('Шаг ' + num + ': настроена геометрия видео, но файл не указан');
+            if (s.requireQRVerification && !s.expectedQRText)
+                warnings.push('Шаг ' + num + ': QR включён, но текст не задан');
+        });
+        return warnings;
+    }
+
+    function showValidationModal(warnings, onConfirm) {
+        var overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.innerHTML = '<div class="validation-dialog">' +
+            '<h3>Предупреждения перед экспортом</h3>' +
+            '<ul>' + warnings.map(function(w) { return '<li>' + escapeHtml(w) + '</li>'; }).join('') + '</ul>' +
+            '<div class="validation-btns">' +
+                '<button style="background:#555;color:#fff;" onclick="this.closest(\'.modal-overlay\').remove()">Отмена</button>' +
+                '<button id="val-confirm" style="background:#00ff44;color:#000;">Скачать всё равно</button>' +
+            '</div></div>';
+        document.body.appendChild(overlay);
+        document.getElementById('val-confirm').onclick = function() {
+            overlay.remove();
+            onConfirm();
+        };
+    }
+
+    function performDownload() {
+        var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(courseData, null, 2));
+        var a = document.createElement('a');
+        a.setAttribute("href", dataStr);
+        a.setAttribute("download", "course.json");
+        document.body.appendChild(a); a.click(); a.remove();
+        showToast('course.json сохранён', 'success');
+    }
+
+    // ============================================================
+    // UTILITIES
+    // ============================================================
+    function hexToRgb(hex) {
+        var c = hex.substring(1);
+        var r = parseInt(c.substring(0, 2), 16) / 255;
+        var g = parseInt(c.substring(2, 4), 16) / 255;
+        var b = parseInt(c.substring(4, 6), 16) / 255;
+        return { r: parseFloat(r.toFixed(2)), g: parseFloat(g.toFixed(2)), b: parseFloat(b.toFixed(2)), a: 1.0 };
+    }
+
+    function rgbToHex(rgb) {
+        if (!rgb) return "#ffffff";
+        var r = Math.round(rgb.r * 255).toString(16).padStart(2, '0');
+        var g = Math.round(rgb.g * 255).toString(16).padStart(2, '0');
+        var b = Math.round(rgb.b * 255).toString(16).padStart(2, '0');
+        return '#' + r + g + b;
+    }
+
+    // ============================================================
+    // KEYBOARD SHORTCUTS
+    // ============================================================
+    document.addEventListener('keydown', function(e) {
+        // Skip if presentation mode is active (has its own handler)
+        if (document.getElementById('presentation-overlay').classList.contains('active')) return;
+
+        var inInput = ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName);
+
+        if (e.ctrlKey && e.key === 'z' && !e.shiftKey) {
+            e.preventDefault(); undo();
+        } else if (e.ctrlKey && (e.key === 'Z' || (e.key === 'z' && e.shiftKey))) {
+            e.preventDefault(); redo();
+        } else if (e.ctrlKey && e.key === 's') {
+            e.preventDefault(); downloadJSON();
+        } else if (e.ctrlKey && e.key === 'd') {
+            e.preventDefault(); duplicateStep(activeStepIndex);
+        } else if (e.key === 'Delete' && !inInput) {
+            deleteCurrentStep();
+        } else if (e.key === 'ArrowLeft' && !inInput) {
+            if (activeStepIndex > 0) selectStep(activeStepIndex - 1);
+        } else if (e.key === 'ArrowRight' && !inInput) {
+            if (activeStepIndex < courseData.steps.length - 1) selectStep(activeStepIndex + 1);
+        }
+    });
+
+    // ============================================================
+    // INIT
+    // ============================================================
+    window.onload = function() {
+        checkAutosave();
+        renderTimeline();
+        loadStepToForm(0);
+        initDragDrop();
+        pushHistoryImmediate();
+    };
+    </script>
+</body>
+</html>

@@ -1291,12 +1291,30 @@
         }
 
         if (s.imageName) {
-            applyUnityTransform(iEl, s.imagePosition, s.imageSize);
-            iEl.style.transform = 'scale(' + s.imageScale.x + ', ' + s.imageScale.y + ')';
+            if (s.layoutPreset === 0) {
+                // StandardAR: картинка справа
+                iEl.style.left = "65%"; iEl.style.top = "10%"; iEl.style.width = "30%"; iEl.style.height = "55%";
+                iEl.style.transform = '';
+            } else if (s.layoutPreset === 2) {
+                // MediaOnly: картинка по центру, крупно
+                iEl.style.left = "10%"; iEl.style.top = "10%"; iEl.style.width = "80%"; iEl.style.height = "75%";
+                iEl.style.transform = '';
+            } else {
+                applyUnityTransform(iEl, s.imagePosition, s.imageSize);
+                iEl.style.transform = 'scale(' + s.imageScale.x + ', ' + s.imageScale.y + ')';
+            }
         }
         if (s.videoName) {
-            applyUnityTransform(vEl, s.videoPosition, s.videoSize);
-            vEl.style.transform = 'scale(' + s.videoScale.x + ', ' + s.videoScale.y + ')';
+            if (s.layoutPreset === 0) {
+                vEl.style.left = "65%"; vEl.style.top = "10%"; vEl.style.width = "30%"; vEl.style.height = "55%";
+                vEl.style.transform = '';
+            } else if (s.layoutPreset === 2) {
+                vEl.style.left = "10%"; vEl.style.top = "10%"; vEl.style.width = "80%"; vEl.style.height = "75%";
+                vEl.style.transform = '';
+            } else {
+                applyUnityTransform(vEl, s.videoPosition, s.videoSize);
+                vEl.style.transform = 'scale(' + s.videoScale.x + ', ' + s.videoScale.y + ')';
+            }
         }
 
         updateSectionIndicators();
